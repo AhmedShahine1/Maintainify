@@ -1,0 +1,6 @@
+@Maintainify_HostAddress = http://localhost:5269
+
+GET {{Maintainify_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
