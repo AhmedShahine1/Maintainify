@@ -7,7 +7,24 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.4">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\Files\Seekers\" />
+    <Folder Include="wwwroot\Files\Provider\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Maintainify.BusinessLayer\Maintainify.BusinessLayer.csproj" />
+    <ProjectReference Include="..\Maintainify.Core\Maintainify.Core.csproj" />
+    <ProjectReference Include="..\Maintainify.RepositoryLayer\Maintainify.RepositoryLayer.csproj" />
   </ItemGroup>
 
 </Project>
