@@ -1,4 +1,5 @@
 ﻿using Maintainify.Core.Entity.ApplicationData;
+using Maintainify.Core.Entity.ProfessionData;
 using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
@@ -13,7 +14,9 @@ namespace Maintainify.RepositoryLayer.Interfaces
     {
         IBaseRepository<ApplicationUser> Users { get; }
         IBaseRepository<ApplicationRole> Roles { get; }
-
+        IBaseRepository<PathFiles> pathFiles { get; }
+        IBaseRepository<Images> images { get; }
+        IBaseRepository<Profession> Profession {  get; }
         //-----------------------------------------------------------------------------------
         int SaveChanges();
 

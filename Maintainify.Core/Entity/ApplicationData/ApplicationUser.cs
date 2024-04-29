@@ -13,13 +13,14 @@ namespace Maintainify.Core.Entity.ApplicationData
         //-------------------------------------------------------------------
         public string FullName { get; set; }
         public DateTime RegistrationDate { get; set; } = DateTime.Now;
-        public string Description { get; set; }
-        public string bankAccountNumber { get; set; }
+        public string? Description { get; set; }
+        public string? bankAccountNumber { get; set; }
         public float? Lat { get; set; }
         public float? Lng { get; set; }
         public string RandomCode { get; set; }
+        public bool PhoneNumberConfirmed {  get; set; }
         //------------------------------------------------------------------------------------------------
-        public Profession profession { get; set; } = new Profession();
+        public Profession? profession { get; set; }
         public List<Images> images { get; set; } = new List<Images> ();
         //------------------------------------------------------------------------------------------------
         [NotMapped]

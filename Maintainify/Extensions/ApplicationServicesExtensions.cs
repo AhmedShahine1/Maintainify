@@ -1,4 +1,6 @@
-﻿using Maintainify.Middleware;
+﻿using Maintainify.BusinessLayer.Interface;
+using Maintainify.BusinessLayer.Services;
+using Maintainify.Middleware;
 
 namespace Maintainify.Extensions
 {
@@ -18,8 +20,8 @@ namespace Maintainify.Extensions
             });
 
             // Application Service 
-            //services.AddScoped<IAccountService, AccountService>();
-            //services.AddTransient<IFileHandling, FileHandling>();
+            services.AddScoped<IAccountService, AccountService>();
+            services.AddTransient<IFileHandling, FileHandling>();
             //services.AddTransient<INotificationService, NotificationService>();
             //services.AddTransient<IPaymentService, PaymentService>();
             //services.Configure<FcmNotificationSetting>(config.GetSection("FcmNotification"));

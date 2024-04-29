@@ -1,76 +1,115 @@
 ﻿using Maintainify.BusinessLayer.Interface;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
+using Maintainify.Core.Entity.ApplicationData;
+using Maintainify.RepositoryLayer.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Maintainify.BusinessLayer.Services
 {
     public class FileHandling : IFileHandling
     {
         private readonly IWebHostEnvironment _webHostEnvironment;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public FileHandling(IWebHostEnvironment webHostEnvironment)
+        public FileHandling(IWebHostEnvironment webHostEnvironment, IUnitOfWork unitOfWork)
         {
             _webHostEnvironment = webHostEnvironment;
+            _unitOfWork = unitOfWork;
         }
 
         #region Photo Handling
 
-        public async Task<string> UploadFile(IFormFile file, string folder, string oldFilePAth = null)
+        public async Task<bool> PathFiles(PathFiles pathFiles)
         {
-            var uploads = Path.Combine(_webHostEnvironment.WebRootPath, $"Files/{folder}");
+            try
+            {
+                if (pathFiles == null)
+                {
+                    return false;
+                }
+                pathFiles.Id = Guid.NewGuid().ToString();
+                await _unitOfWork.pathFiles.AddAsync(pathFiles);
+                await _unitOfWork.SaveChangesAsync();
+                return true;
+            }
+            catch 
+            {
+                return false;
+            }
+        }
+
+        public async Task<Images> ProfileImage()
+        {
+            string fileName = "Ellipse 1064.png";
+            var filePath = Path.Combine(_webHostEnvironment.WebRootPath, "Files", "Profiles", fileName);
+            // Check if the file exists
+            if (!System.IO.File.Exists(filePath))
+            {
+                return null; // Return 404 Not Found if the file does not exist
+            }
+
+            try
+            {
+                var path = await _unitOfWork.pathFiles.FindByQuery(x => x.type == "Profile").FirstAsync();
+                Images images = new Images()
+                {
+                    ImageName = fileName,
+                    pathFiles = path,
+                    PathId = path.Id,
+                    Id = Guid.NewGuid().ToString(),
+                };
+                await _unitOfWork.images.AddAsync(images);
+                await _unitOfWork.SaveChangesAsync();
+
+                return images;
+            }
+            catch (Exception ex)
+            {
+                // Handle any exceptions
+                return null;
+            }
+        }
+
+        public async Task<Images> UploadFile(IFormFile file, string folder, string oldFilePath = null)
+        {
+            PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == folder).FirstAsync();
+            var uploads = Path.Combine(_webHostEnvironment.WebRootPath, pathFiles.Name);
             if (!Directory.Exists(uploads))
             {
                 Directory.CreateDirectory(uploads);
             }
             var uniqueFileName = RandomString(10) + "_" + file.FileName;
             var filePath = Path.Combine(uploads, uniqueFileName);
+            Images images = new Images()
+            {
+                ImageName = uniqueFileName,
+                pathFiles = pathFiles,
+                PathId = pathFiles.Id,
+                Id = Guid.NewGuid().ToString(),
+            };
             await using (var fileStream = new FileStream(filePath, FileMode.Create))
             {
                 await file.CopyToAsync(fileStream);
+                await _unitOfWork.images.AddAsync(images);
+                await _unitOfWork.SaveChangesAsync();
             }
-            var path = Path.Combine($"/Files/{folder}", uniqueFileName);
-            var old = $"{_webHostEnvironment.WebRootPath}/{oldFilePAth}";
-            if (oldFilePAth != null && File.Exists(old))
+            var path = Path.Combine(uploads, oldFilePath);
+            var old = $"{_webHostEnvironment.WebRootPath}/{path}";
+            if (oldFilePath != null && File.Exists(old))
             {
                 File.Delete(old);
             }
-            return path;
+            return images;
         }
 
-        public async Task<string> UploadPhotoBase64(string stringFile, string folderName = "Seekers", string oldFilePAth = null)
+        public async Task<string> PathFile(Images images)
         {
-            var mystr = stringFile.Split(',').ToList<string>();
-            var type = mystr[0].Split('/').ToList<string>()[1].Split(';').ToList()[0];
-            var byteFile = Convert.FromBase64String(mystr[1]);
-
-            var stream = new MemoryStream(byteFile);
-            IFormFile file = new FormFile(stream, 0, byteFile.Length, "Name", folderName);
-
-            var uploads = Path.Combine(_webHostEnvironment.WebRootPath, $"Files/{folderName}");
-            if (!Directory.Exists(uploads))
-            {
-                Directory.CreateDirectory(uploads);
-            }
-            var uniqueFileName = RandomString(10) + "_" + file.FileName + "." + type;
-            var filePath = Path.Combine(uploads, uniqueFileName);
-            await using (var fileStream = new FileStream(filePath, FileMode.Create))
-            {
-                await file.CopyToAsync(fileStream);
-            }
-            var path = Path.Combine($"/Files/{folderName}", uniqueFileName);
-            var old = $"{_webHostEnvironment.WebRootPath}/{oldFilePAth}";
-            if (oldFilePAth != null && File.Exists(old))
-            {
-                File.Delete(old);
-            }
-            return path;
-        }
-
-        public async Task<string> UploadPhotoByte(byte[] byteFile, string folder = "Seekers", string oldFilePAth = null)
-        {
-            var stream = new MemoryStream(byteFile);
-            IFormFile file = new FormFile(stream, 0, byteFile.Length, "Name", folder);
-            return await UploadFile(file, folder, oldFilePAth);
+            if (images == null)
+                return null;
+            PathFiles pathFiles =await _unitOfWork.pathFiles.FindByQuery(x => x.Id == images.PathId).FirstAsync();
+            return Path.Combine(_webHostEnvironment.WebRootPath, pathFiles.Name, images.ImageName);
         }
 
         public static string RandomString(int length)
