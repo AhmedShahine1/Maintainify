@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maintainify.Core.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240425131013_IntialCreate")]
-    partial class IntialCreate
+    [Migration("20240430035425_intialCreate")]
+    partial class intialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -73,7 +73,6 @@ namespace Maintainify.Core.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Email")
@@ -140,11 +139,9 @@ namespace Maintainify.Core.Migrations
                         .HasColumnType("nvarchar(256)");
 
                     b.Property<string>("bankAccountNumber")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("professionId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
@@ -167,9 +164,6 @@ namespace Maintainify.Core.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("ApplicationUserId")
-                        .HasColumnType("nvarchar(450)");
-
                     b.Property<string>("ImageName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -178,12 +172,16 @@ namespace Maintainify.Core.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<string>("pathFilesId")
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ApplicationUserId");
+                    b.HasIndex("UserId");
 
                     b.HasIndex("pathFilesId");
 
@@ -196,6 +194,10 @@ namespace Maintainify.Core.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("type")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -328,22 +330,24 @@ namespace Maintainify.Core.Migrations
                 {
                     b.HasOne("Maintainify.Core.Entity.ProfessionData.Profession", "profession")
                         .WithMany()
-                        .HasForeignKey("professionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("professionId");
 
                     b.Navigation("profession");
                 });
 
             modelBuilder.Entity("Maintainify.Core.Entity.ApplicationData.Images", b =>
                 {
-                    b.HasOne("Maintainify.Core.Entity.ApplicationData.ApplicationUser", null)
+                    b.HasOne("Maintainify.Core.Entity.ApplicationData.ApplicationUser", "User")
                         .WithMany("images")
-                        .HasForeignKey("ApplicationUserId");
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("Maintainify.Core.Entity.ApplicationData.PathFiles", "pathFiles")
                         .WithMany()
                         .HasForeignKey("pathFilesId");
+
+                    b.Navigation("User");
 
                     b.Navigation("pathFiles");
                 });

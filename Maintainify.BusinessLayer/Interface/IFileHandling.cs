@@ -13,9 +13,11 @@ namespace Maintainify.BusinessLayer.Interface
     {
         public Task<bool> PathFiles(PathFiles pathFiles);
 
-        public Task<Images> ProfileImage();
+        public Task<Images> ProfileImage(string userId, string PathType);
 
-        public Task<Images> UploadFile(IFormFile file, string folder, string oldFilePAth = null);
+        public Task<Images> UploadFile(IFormFile file, string folder, string userId);
+
+        public Task<bool> DeleteFile(Images images);
 
         public Task<string> PathFile(Images images);
         public string GetFile(string imgName);

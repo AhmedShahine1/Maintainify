@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace Maintainify.Core.Migrations
 {
     /// <inheritdoc />
-    public partial class IntialCreate : Migration
+    public partial class intialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -19,6 +19,7 @@ namespace Maintainify.Core.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    type = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
@@ -65,12 +66,13 @@ namespace Maintainify.Core.Migrations
                     Status = table.Column<bool>(type: "bit", nullable: false),
                     FullName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     RegistrationDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    bankAccountNumber = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    bankAccountNumber = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Lat = table.Column<float>(type: "real", nullable: true),
                     Lng = table.Column<float>(type: "real", nullable: true),
                     RandomCode = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    professionId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    PhoneNumberConfirmed = table.Column<bool>(type: "bit", nullable: false),
+                    professionId = table.Column<string>(type: "nvarchar(450)", nullable: true),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -80,7 +82,6 @@ namespace Maintainify.Core.Migrations
                     SecurityStamp = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ConcurrencyStamp = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     PhoneNumber = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    PhoneNumberConfirmed = table.Column<bool>(type: "bit", nullable: false),
                     TwoFactorEnabled = table.Column<bool>(type: "bit", nullable: false),
                     LockoutEnd = table.Column<DateTimeOffset>(type: "datetimeoffset", nullable: true),
                     LockoutEnabled = table.Column<bool>(type: "bit", nullable: false),
@@ -93,8 +94,7 @@ namespace Maintainify.Core.Migrations
                         name: "FK_Users_Professions_professionId",
                         column: x => x.professionId,
                         principalTable: "Professions",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -128,7 +128,7 @@ namespace Maintainify.Core.Migrations
                     ImageName = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     PathId = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     pathFilesId = table.Column<string>(type: "nvarchar(450)", nullable: true),
-                    ApplicationUserId = table.Column<string>(type: "nvarchar(450)", nullable: true)
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -139,11 +139,12 @@ namespace Maintainify.Core.Migrations
                         principalTable: "PathFiles",
                         principalColumn: "Id");
                     table.ForeignKey(
-                        name: "FK_Images_Users_ApplicationUserId",
-                        column: x => x.ApplicationUserId,
+                        name: "FK_Images_Users_UserId",
+                        column: x => x.UserId,
                         principalSchema: "dbo",
                         principalTable: "Users",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -241,14 +242,14 @@ namespace Maintainify.Core.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Images_ApplicationUserId",
-                table: "Images",
-                column: "ApplicationUserId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Images_pathFilesId",
                 table: "Images",
                 column: "pathFilesId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Images_UserId",
+                table: "Images",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "RoleNameIndex",

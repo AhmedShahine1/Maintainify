@@ -5,6 +5,7 @@ using Maintainify.Core.Entity.ApplicationData;
 using Maintainify.RepositoryLayer.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using static System.Net.Mime.MediaTypeNames;
+using System.Diagnostics.Eventing.Reader;
 
 namespace Maintainify.BusinessLayer.Services
 {
@@ -40,7 +41,7 @@ namespace Maintainify.BusinessLayer.Services
             }
         }
 
-        public async Task<Images> ProfileImage()
+        public async Task<Images> ProfileImage(string userId, string PathType)
         {
             string fileName = "Ellipse 1064.png";
             var filePath = Path.Combine(_webHostEnvironment.WebRootPath, "Files", "Profiles", fileName);
@@ -52,12 +53,13 @@ namespace Maintainify.BusinessLayer.Services
 
             try
             {
-                var path = await _unitOfWork.pathFiles.FindByQuery(x => x.type == "Profile").FirstAsync();
+                var path = await _unitOfWork.pathFiles.FindByQuery(x => x.type == PathType).FirstAsync();
                 Images images = new Images()
                 {
                     ImageName = fileName,
                     pathFiles = path,
                     PathId = path.Id,
+                    UserId = userId,
                     Id = Guid.NewGuid().ToString(),
                 };
                 await _unitOfWork.images.AddAsync(images);
@@ -72,21 +74,22 @@ namespace Maintainify.BusinessLayer.Services
             }
         }
 
-        public async Task<Images> UploadFile(IFormFile file, string folder, string oldFilePath = null)
+        public async Task<Images> UploadFile(IFormFile file, string folder , string userId)
         {
             PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == folder).FirstAsync();
             var uploads = Path.Combine(_webHostEnvironment.WebRootPath, pathFiles.Name);
+            var uniqueFileName = RandomString(10) + "_" + file.FileName;
+            var filePath = Path.Combine(uploads, uniqueFileName);
             if (!Directory.Exists(uploads))
             {
                 Directory.CreateDirectory(uploads);
             }
-            var uniqueFileName = RandomString(10) + "_" + file.FileName;
-            var filePath = Path.Combine(uploads, uniqueFileName);
             Images images = new Images()
             {
                 ImageName = uniqueFileName,
                 pathFiles = pathFiles,
                 PathId = pathFiles.Id,
+                UserId = userId,
                 Id = Guid.NewGuid().ToString(),
             };
             await using (var fileStream = new FileStream(filePath, FileMode.Create))
@@ -95,13 +98,22 @@ namespace Maintainify.BusinessLayer.Services
                 await _unitOfWork.images.AddAsync(images);
                 await _unitOfWork.SaveChangesAsync();
             }
-            var path = Path.Combine(uploads, oldFilePath);
-            var old = $"{_webHostEnvironment.WebRootPath}/{path}";
-            if (oldFilePath != null && File.Exists(old))
-            {
-                File.Delete(old);
-            }
+
             return images;
+        }
+
+        public async Task<bool> DeleteFile(Images images)
+        {
+            try
+            {
+                _unitOfWork.images.Delete(images);
+                await _unitOfWork.SaveChangesAsync();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public async Task<string> PathFile(Images images)

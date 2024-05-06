@@ -1,5 +1,4 @@
 ﻿using Maintainify.Core.Entity.ProfessionData;
-using Maintainify.Core.Helpers;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -21,7 +20,7 @@ namespace Maintainify.Core.Entity.ApplicationData
         public bool PhoneNumberConfirmed {  get; set; }
         //------------------------------------------------------------------------------------------------
         public Profession? profession { get; set; }
-        public List<Images> images { get; set; } = new List<Images> ();
+        public IEnumerable<Images> images { get; set; } = new List<Images> ();
         //------------------------------------------------------------------------------------------------
         [NotMapped]
         public List<IFormFile> UserImgFile { get; set; }

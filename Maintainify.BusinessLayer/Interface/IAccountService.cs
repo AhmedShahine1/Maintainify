@@ -1,8 +1,11 @@
 ﻿using Maintainify.Core.Entity.ApplicationData;
+using Maintainify.Core.ModelView.AuthViewModel.ChangePasswordData;
+using Maintainify.Core.ModelView.AuthViewModel.LoginData;
 using Maintainify.Core.ModelView.AuthViewModel.RegisterData;
 using Maintainify.Core.ModelView.AuthViewModel.RoleData;
 using Maintainify.Core.ModelView.AuthViewModels;
 using Maintainify.Core.ModelView.AuthViewModels.RegisterData;
+using Maintainify.Core.ModelView.AuthViewModels.UpdateData;
 
 namespace Maintainify.BusinessLayer.Interface
 {
@@ -11,33 +14,25 @@ namespace Maintainify.BusinessLayer.Interface
         Task<List<ApplicationUser>> GetAllUsers();
         Task<ApplicationUser> GetUserById(string userId);
         Task<ApplicationUser> GetUserByPhoneNumber(string phoneNumber);
-        //Task<ApplicationUser> UpdateUser(ApplicationUser user);
+        Task<ApplicationUser> UpdateUser(ApplicationUser user);
         ////Task<AuthModel> UpdateLocation(string userId, UpdateUserLocation model);
         Task<AuthModel> RegisterProviderAsync(RegisterProvider model);
         Task<AuthModel> RegisterSeekerAsync(RegisterSeeker model);
-        ////Task<AuthModel> RegisterFreeAgentAsync(RegisterFreeAgentVm model);
-        ////Task<AuthModel> RegisterAdminAsync(RegisterAdminMv model);
-        ////Task<AuthModel> RegisterUserAsync(RegisterUserMv model);
-        ////Task<AuthModel> LoginAsync(LoginModel model);
-        //Task<bool> Logout(string userName);
+        Task<AuthModel> LoginAsync(LoginModel model);
+        Task<bool> Logout(string userName);
         //Task<AuthModel> ReSendSms(string phoneNumber);
         ////Task<AuthModel> ForgetPassword(ForgotPasswordMv forgotPasswordModelView);
         ////Task<AuthModel> ConfirmSmsAsync(ConfirmSms confirmSms);
         //Task<AuthModel> ChangePassword(string userId, string password);
-        ////Task<AuthModel> ChangeOldPasswordAsync(string userId, ChangeOldPassword changePassword);
-        ////Task<AuthModel> UpdateFreeAgentProfile(string userId, UpdateFreeAgentMv updateUser);
-        ////Task<AuthModel> UpdateCenterProfile(string userId, UpdateCenterMv updateUser);
-        ////Task<AuthModel> UpdateFreeAgentProfileAdmin(string userId, UpdateFreeAgentModel updateUser);
-        ////Task<AuthModel> UpdateCenterProfileAdmin(string userId, UpdateCenterModel updateUser);
-        ////Task<AuthModel> UpdateUserProfileAdmin(string userId, UpdateUserModel model);
-        ////Task<AuthModel> UpdateAdminProfile(string userId, UpdateAdminMv updateUser);
-        ////Task<AuthModel> UpdateUserProfile(string userId, UpdateUserMv updateUser);
-        //Task<AuthModel> GetUserInfo(string userId);
+        Task<AuthModel> ChangeOldPassword(string userId, ChangeOldPassword changePassword);
+        Task<AuthModel> UpdateUserProfileProvider(string userId, UpdateProfileProvider updateUser);
+        Task<AuthModel> UpdateUserProfileSeeker(string userId, UpdateProfileSeeker updateUser);
+        Task<AuthModel> GetUserInfo(string userId);
         Task<string> AddRoleAsync(AddRoleModel model);
+        IList<string> RoleUser(ApplicationUser userc);
         Task<List<string>> GetRoles();
-
-        //string ValidateJwtToken(string token);
-        //int GenerateRandomNo();
+        string ValidateJwtToken(string token);
+        int GenerateRandomNo();
         ////------------------------------------------------------
         ////Task Activate(string userId);
         ////Task Suspend(string userId);

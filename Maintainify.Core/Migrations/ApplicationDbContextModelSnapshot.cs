@@ -70,7 +70,6 @@ namespace Maintainify.Core.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Email")
@@ -137,11 +136,9 @@ namespace Maintainify.Core.Migrations
                         .HasColumnType("nvarchar(256)");
 
                     b.Property<string>("bankAccountNumber")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("professionId")
-                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
@@ -164,25 +161,23 @@ namespace Maintainify.Core.Migrations
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("ApplicationUserId")
-                        .HasColumnType("nvarchar(450)");
-
                     b.Property<string>("ImageName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("PathId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
-                    b.Property<string>("pathFilesId")
+                    b.Property<string>("UserId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ApplicationUserId");
+                    b.HasIndex("PathId");
 
-                    b.HasIndex("pathFilesId");
+                    b.HasIndex("UserId");
 
                     b.ToTable("Images");
                 });
@@ -329,22 +324,26 @@ namespace Maintainify.Core.Migrations
                 {
                     b.HasOne("Maintainify.Core.Entity.ProfessionData.Profession", "profession")
                         .WithMany()
-                        .HasForeignKey("professionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("professionId");
 
                     b.Navigation("profession");
                 });
 
             modelBuilder.Entity("Maintainify.Core.Entity.ApplicationData.Images", b =>
                 {
-                    b.HasOne("Maintainify.Core.Entity.ApplicationData.ApplicationUser", null)
-                        .WithMany("images")
-                        .HasForeignKey("ApplicationUserId");
-
                     b.HasOne("Maintainify.Core.Entity.ApplicationData.PathFiles", "pathFiles")
                         .WithMany()
-                        .HasForeignKey("pathFilesId");
+                        .HasForeignKey("PathId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Maintainify.Core.Entity.ApplicationData.ApplicationUser", "User")
+                        .WithMany("images")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
 
                     b.Navigation("pathFiles");
                 });

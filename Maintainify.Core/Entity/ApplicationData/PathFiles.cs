@@ -9,7 +9,7 @@ namespace Maintainify.Core.Entity.ApplicationData
 {
     public class PathFiles
     {
-        public string Id { get; set; } 
+        public string? Id { get; set; } 
         public string type { get; set; }
         public string Name { get; set; }
     }

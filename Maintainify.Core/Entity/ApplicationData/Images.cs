@@ -11,10 +11,19 @@ namespace Maintainify.Core.Entity.ApplicationData
         [Display(Name = "Image Name")]
         public string ImageName { get; set; }
 
-        [ForeignKey("Path")]
+        [ForeignKey("pathFiles")]
         [Display(Name = "Image Path")]
         public string PathId { get; set; }
 
         public PathFiles pathFiles { get; set; }
+
+        //-----------------------------------------
+
+        [ForeignKey("User")]
+        [Display(Name = "المستخدم ")]
+        public string UserId { get; set; }
+        [Display(Name = "اسم المستخدم ")]
+        public virtual ApplicationUser User { get; set; }
+
     }
 }
