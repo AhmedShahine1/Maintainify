@@ -8,7 +8,7 @@ namespace Maintainify.Core.Entity.ProfessionData
 {
     public class Profession
     {
-        public string Id { get; set; }
+        public string? Id { get; set; }
         public string Name { get; set; }
     }
 }

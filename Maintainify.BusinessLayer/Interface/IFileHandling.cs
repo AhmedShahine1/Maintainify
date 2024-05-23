@@ -17,6 +17,8 @@ namespace Maintainify.BusinessLayer.Interface
 
         public Task<Images> UploadFile(IFormFile file, string folder, string userId);
 
+        Task<IEnumerable<Images>> GetFile(string folder, string userId);
+
         public Task<bool> DeleteFile(Images images);
 
         public Task<string> PathFile(Images images);

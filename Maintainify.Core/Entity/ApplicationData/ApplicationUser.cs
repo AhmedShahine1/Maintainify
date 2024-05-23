@@ -1,4 +1,5 @@
-﻿using Maintainify.Core.Entity.ProfessionData;
+﻿using Maintainify.Core.Entity.OrderData;
+using Maintainify.Core.Entity.ProfessionData;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -18,9 +19,12 @@ namespace Maintainify.Core.Entity.ApplicationData
         public float? Lng { get; set; }
         public string RandomCode { get; set; }
         public bool PhoneNumberConfirmed {  get; set; }
+        public string professionId { get; set; }
         //------------------------------------------------------------------------------------------------
         public Profession? profession { get; set; }
         public IEnumerable<Images> images { get; set; } = new List<Images> ();
+        //public IEnumerable<Order> orders { get; set; } = new List<Order>();
+
         //------------------------------------------------------------------------------------------------
         [NotMapped]
         public List<IFormFile> UserImgFile { get; set; }

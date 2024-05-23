@@ -6,6 +6,7 @@ using Maintainify.Core.ModelView.AuthViewModel.ChangePasswordData;
 using Maintainify.Core.ModelView.AuthViewModel.LoginData;
 using Maintainify.Core.ModelView.AuthViewModel.RegisterData;
 using Maintainify.Core.ModelView.AuthViewModel.RoleData;
+using Maintainify.Core.ModelView.AuthViewModels;
 using Maintainify.Core.ModelView.AuthViewModels.RegisterData;
 using Maintainify.Core.ModelView.AuthViewModels.UpdateData;
 using Maintainify.RepositoryLayer.Interfaces;
@@ -14,6 +15,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using System.Security.Claims;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -159,6 +161,28 @@ namespace Maintainify.Controllers
             }
         }
 
+        [HttpGet("GetProfession")]
+        public async Task<ActionResult<BaseResponse>> GetProfession([FromHeader] string lang = "en")
+        {
+            try
+            {
+                var profession = await _unitOfWork.Profession.GetAllAsync();
+                _baseResponse.Status = true;
+                _baseResponse.Message = (lang == "ar") ? "تم جلب المسار بنجاح" : "Get Professions successfully";
+                _baseResponse.Code = 200;
+                _baseResponse.Data = new { profession };
+                return Ok(_baseResponse);
+
+            }
+            catch (Exception ex)
+            {
+                _baseResponse.Status = false;
+                _baseResponse.Message = (lang == "ar") ? "خطأ في جلب البيانات" : "An unexpected error occurred while get the data. Please try again later.";
+                _baseResponse.Code = 500;
+                _baseResponse.Data = new { message = string.Join("; ", ModelState.Values.SelectMany(x => x.Errors).Select(x => x.ErrorMessage)) };
+                return StatusCode(500, _baseResponse);
+            }
+        }
         //---------------------------------------------------------------------------------------------- Register api
         [HttpPost("ProviderRegister")]
         public async Task<ActionResult<BaseResponse>> ProviderRegister([FromForm] RegisterProvider model, [FromHeader] string lang = "en")
@@ -184,7 +208,7 @@ namespace Maintainify.Controllers
             {
                 _baseResponse.Status = true;
                 _baseResponse.Message = (lang == "ar") ? result.ArMessage : result.Message;
-                _baseResponse.Code = result.ErrorCode;
+                _baseResponse.Code = 200;
                 _baseResponse.Data = new { result.FullName, result.PhoneNumber, result.Description, result.UserImgUrl, result.Roles, result.bankAccountNumber };
             }
             return Ok(_baseResponse);
@@ -214,7 +238,7 @@ namespace Maintainify.Controllers
             {
                 _baseResponse.Status = true;
                 _baseResponse.Message = (lang == "ar") ? result.ArMessage : result.Message;
-                _baseResponse.Code = result.ErrorCode;
+                _baseResponse.Code = 200;
                 _baseResponse.Data = new { result.FullName, result.PhoneNumber, result.UserImgUrl, result.Roles };
             }
             return Ok(_baseResponse);
@@ -234,7 +258,7 @@ namespace Maintainify.Controllers
                 return BadRequest(_baseResponse);
             }
             var userId = this.User.Claims.First(i => i.Type == "uid").Value; // will give the user's userId
-            var user = await _unitOfWork.Users.FindByQuery(x => x.Id == userId && x.Status == true).FirstAsync();
+            var user = await _unitOfWork.Users.FindByQuery(x => x.Id == userId && x.Status == true).FirstOrDefaultAsync();
             if (user == null)
             {
                 _baseResponse.Message = (lang == "ar") ? "لم يتم العثور علي المستخدم" : "User is Exits";
@@ -246,8 +270,8 @@ namespace Maintainify.Controllers
             }
             try
             {
-                PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == "Profile").FirstAsync();
-                Images image = await _unitOfWork.images.FindByQuery(s => s.UserId == userId && s.PathId == pathFiles.Id).FirstAsync();
+                PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == "Profile").FirstOrDefaultAsync();
+                Images image = await _unitOfWork.images.FindByQuery(s => s.UserId == userId && s.PathId == pathFiles.Id).FirstOrDefaultAsync();
                 if (!await _fileHandling.DeleteFile(image))
                 {
                     _baseResponse.Message = (lang == "ar") ? " خطا في تحديث الصورة" : "Error in update Profile";
@@ -263,6 +287,7 @@ namespace Maintainify.Controllers
                     images.Add(await _fileHandling.PathFile(img));
                 }
                 _baseResponse.Code = 200;
+                _baseResponse.Status = true;
                 _baseResponse.Message = (lang == "ar") ? "تم تحديث الصورة" : "Update Profile successfully";
                 _baseResponse.Data = new
                 {
@@ -293,7 +318,7 @@ namespace Maintainify.Controllers
                 return BadRequest(_baseResponse);
             }
             var userId = this.User.Claims.First(i => i.Type == "uid").Value; // will give the user's userId
-            var user = await _unitOfWork.Users.FindByQuery(x => x.Id == userId && x.Status==true).FirstAsync();
+            var user = await _unitOfWork.Users.FindByQuery(x => x.Id == userId && x.Status==true).FirstOrDefaultAsync();
             if(user == null)
             {
                 _baseResponse.Message = (lang == "ar") ? "لم يتم العثور علي المستخدم" : "User is Exits";
@@ -313,7 +338,7 @@ namespace Maintainify.Controllers
                 return Unauthorized(_baseResponse);
             }
 
-            PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == "PreviousWork").FirstAsync();
+            PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == "PreviousWork").FirstOrDefaultAsync();
             IEnumerable<Images> image = _unitOfWork.images.FindByQuery(s => s.UserId == userId && s.PathId == pathFiles.Id).AsQueryable();
             if(image.Count()!=0)
             {
@@ -333,18 +358,6 @@ namespace Maintainify.Controllers
             }
             try
             {
-                List<string> images = new List<string>();
-                if (updateProfile.PreviousWork.Count() != 0)
-                {
-                    foreach (var imageItem in updateProfile.PreviousWork)
-                    {
-                        Images newImages = await _fileHandling.UploadFile(imageItem, "PreviousWork", userId);
-                    }
-                    foreach (var img in _unitOfWork.images.FindByQuery(s => s.UserId == userId && s.PathId == pathFiles.Id))
-                    {
-                        images.Add(await _fileHandling.PathFile(img));
-                    }
-                }
                 var result = await _accountService.UpdateUserProfileProvider(userId,updateProfile);
                 if (!result.IsAuthenticated)
                 {
@@ -356,6 +369,7 @@ namespace Maintainify.Controllers
                 }
 
                 _baseResponse.Code = 200;
+                _baseResponse.Status = true;
                 _baseResponse.Message = (lang == "ar") ? "تم تحديث البروفايل" : "Update Profile successfully";
                 _baseResponse.Data = new
                 {
@@ -363,7 +377,6 @@ namespace Maintainify.Controllers
                     result.FullName,
                     result.Token,
                     Role = result.Roles,
-                    PreviosWork=images,
                     result.PhoneNumber,
                     result.Description,
                     result.bankAccountNumber
@@ -393,7 +406,7 @@ namespace Maintainify.Controllers
                 return BadRequest(_baseResponse);
             }
             var userId = this.User.Claims.First(i => i.Type == "uid").Value; // will give the user's userId
-            var user = await _unitOfWork.Users.FindByQuery(x => x.Id == userId && x.Status == true).FirstAsync();
+            var user = await _unitOfWork.Users.FindByQuery(x => x.Id == userId && x.Status == true).FirstOrDefaultAsync();
             if (user == null)
             {
                 _baseResponse.Message = (lang == "ar") ? "لم يتم العثور علي المستخدم" : "User is Exits";
@@ -425,6 +438,7 @@ namespace Maintainify.Controllers
                 }
 
                 _baseResponse.Code = 200;
+                _baseResponse.Status = true;
                 _baseResponse.Message = (lang == "ar") ? "تم تحديث البروفايل" : "Update Profile successfully";
                 _baseResponse.Data = new
                 {
@@ -444,6 +458,192 @@ namespace Maintainify.Controllers
                 return StatusCode(500, _baseResponse);
             }
         }
+        //----------------------------------------------------------------------------------------------------- previous Work Provider
+        [HttpDelete("DeletePreviousWork")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<ActionResult<BaseResponse>> DeletePreviousWork([FromForm] string ImageId, [FromHeader] string lang = "en")
+        {
+            if (!ModelState.IsValid)
+            {
+                _baseResponse.Message = (lang == "ar") ? "خطأ في البيانات" : "Error in data";
+                _baseResponse.Code = 400;
+                _baseResponse.Status = false;
+                _baseResponse.Data = new { message = string.Join("; ", ModelState.Values.SelectMany(x => x.Errors).Select(x => x.ErrorMessage)) };
+                return BadRequest(_baseResponse);
+            }
+            var userId = this.User.Claims.First(i => i.Type == "uid").Value; // will give the user's userId
+            var user = await _unitOfWork.Users.FindByQuery(x => x.Id == userId && x.Status == true).FirstOrDefaultAsync();
+            if (user == null)
+            {
+                _baseResponse.Message = (lang == "ar") ? "لم يتم العثور علي المستخدم" : "User is Exits";
+                _baseResponse.Code = 400;
+                _baseResponse.Status = false;
+                _baseResponse.Data = new { };
+                return StatusCode(400, _baseResponse);
+
+            }
+            IList<string> roleUser = _accountService.RoleUser(user);
+            if (!roleUser.Contains("Provider"))
+            {
+                _baseResponse.Message = (lang == "ar") ? "المستخدم لا يملك صلاحيه" : "User is not Seeker";
+                _baseResponse.Code = 401;
+                _baseResponse.Status = false;
+                _baseResponse.Data = new { ImageId };
+                return Unauthorized(_baseResponse);
+            }
+            var Image = _unitOfWork.images.FindByQuery(s => s.Id == ImageId && s.UserId == userId).First();
+            if (Image == null)
+            {
+                _baseResponse.Message = (lang == "ar") ? "لم يتم العثور علي الصورة" : "Image is Exits";
+                _baseResponse.Code = 400;
+                _baseResponse.Status = false;
+                _baseResponse.Data = new { };
+                return StatusCode(400, _baseResponse);
+
+            }
+            try
+            {
+                _unitOfWork.images.Delete(Image);
+                await _unitOfWork.SaveChangesAsync();
+                _baseResponse.Code = 200;
+                _baseResponse.Status = true;
+                _baseResponse.Message = (lang == "ar") ? "تم حذف الصورة" : "Delete Image successfully";
+                _baseResponse.Data = new
+                {
+                };
+                return Ok(_baseResponse);
+            }
+            catch (Exception ex)
+            {
+                _baseResponse.Message = ex.Message;
+                _baseResponse.Code = 500;
+                _baseResponse.Status = false;
+                _baseResponse.Data = new { message = string.Join("; ", ModelState.Values.SelectMany(x => x.Errors).Select(x => x.ErrorMessage)) };
+                return StatusCode(500, _baseResponse);
+            }
+        }
+
+        [HttpPost("AddPreviousWork")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<ActionResult<BaseResponse>> AddPreviousWork([FromForm] IList<IFormFile> files, [FromHeader] string lang = "en")
+        {
+            if (!ModelState.IsValid)
+            {
+                _baseResponse.Message = (lang == "ar") ? "خطأ في البيانات" : "Error in data";
+                _baseResponse.Code = 400;
+                _baseResponse.Status = false;
+                _baseResponse.Data = new { message = string.Join("; ", ModelState.Values.SelectMany(x => x.Errors).Select(x => x.ErrorMessage)) };
+                return BadRequest(_baseResponse);
+            }
+            var userId = this.User.Claims.First(i => i.Type == "uid").Value; // will give the user's userId
+            var user = await _unitOfWork.Users.FindByQuery(x => x.Id == userId && x.Status == true).FirstOrDefaultAsync();
+            if (user == null)
+            {
+                _baseResponse.Message = (lang == "ar") ? "لم يتم العثور علي المستخدم" : "User is Exits";
+                _baseResponse.Code = 400;
+                _baseResponse.Status = false;
+                _baseResponse.Data = new { };
+                return StatusCode(400, _baseResponse);
+
+            }
+            IList<string> roleUser = _accountService.RoleUser(user);
+            if (!roleUser.Contains("Provider"))
+            {
+                _baseResponse.Message = (lang == "ar") ? "المستخدم لا يملك صلاحيه" : "User is not Seeker";
+                _baseResponse.Code = 401;
+                _baseResponse.Status = false;
+                _baseResponse.Data = new { files };
+                return Unauthorized(_baseResponse);
+            }
+            IList<ImageModel> images=new List<ImageModel>();
+            foreach(var file in files)
+            {
+                try
+                {
+                    Images image = await _fileHandling.UploadFile(file, "PreviousWork", userId);
+                    images.Add(new ImageModel
+                    {
+                        IdImage = image.Id,
+                        PathImage = await _fileHandling.PathFile(image)
+                    }
+                    ); ;
+                }
+                catch (Exception ex)
+                {
+                    _baseResponse.Message = ex.Message;
+                    _baseResponse.Code = 500;
+                    _baseResponse.Status = false;
+                    _baseResponse.Data = new { message = string.Join("; ", ModelState.Values.SelectMany(x => x.Errors).Select(x => x.ErrorMessage)) };
+                    return StatusCode(500, _baseResponse);
+                }
+            }
+
+            _baseResponse.Code = 200;
+            _baseResponse.Status = true;
+            _baseResponse.Message = (lang == "ar") ? "تم حفظ الصور" : "Add Images successfully";
+            _baseResponse.Data = new
+            {
+                images
+            };
+            return Ok(_baseResponse);
+
+        }
+
+        [HttpGet("GetPreviousWork")]
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        public async Task<ActionResult<BaseResponse>> GetPreviousWork([FromHeader] string lang = "en")
+        {
+            var userId = this.User.Claims.First(i => i.Type == "uid").Value; // will give the user's userId
+            var user = await _unitOfWork.Users.FindByQuery(x => x.Id == userId && x.Status == true).FirstOrDefaultAsync();
+            if (user == null)
+            {
+                _baseResponse.Message = (lang == "ar") ? "لم يتم العثور علي المستخدم" : "User is Exits";
+                _baseResponse.Code = 400;
+                _baseResponse.Status = false;
+                _baseResponse.Data = new { };
+                return StatusCode(400, _baseResponse);
+
+            }
+            IList<string> roleUser = _accountService.RoleUser(user);
+            if (!roleUser.Contains("Provider"))
+            {
+                _baseResponse.Message = (lang == "ar") ? "المستخدم لا يملك صلاحيه" : "User is not Seeker";
+                _baseResponse.Code = 401;
+                _baseResponse.Status = false;
+                _baseResponse.Data = new { };
+                return Unauthorized(_baseResponse);
+            }
+            IEnumerable<Images> files = await _fileHandling.GetFile("PreviousWork", userId);
+            IList<ImageModel> images = new List<ImageModel>();
+            foreach (var file in files)
+            {
+                try
+                {
+                    images.Add(new ImageModel
+                    {
+                        IdImage = file.Id,
+                        PathImage = await _fileHandling.PathFile(file)
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _baseResponse.Message = ex.Message;
+                    _baseResponse.Code = 500;
+                    _baseResponse.Status = false;
+                    _baseResponse.Data = new { message = string.Join("; ", ModelState.Values.SelectMany(x => x.Errors).Select(x => x.ErrorMessage)) };
+                    return StatusCode(500, _baseResponse);
+                }
+            }
+            _baseResponse.Status = true;
+            _baseResponse.Code = 200;
+            _baseResponse.Message = (lang == "ar") ? " معرض الصور الخاص بك" : "Get Images successfully";
+            _baseResponse.Data = new
+            {
+                images
+            };
+            return Ok(_baseResponse);
+
+        }
 
         //------------------------------------------------------------------------------------------------ Change Password Api
 
@@ -460,7 +660,7 @@ namespace Maintainify.Controllers
                 return BadRequest(_baseResponse);
             }
             var userId = this.User.Claims.First(i => i.Type == "uid").Value; // will give the user's userId
-            var user = await _unitOfWork.Users.FindByQuery(x => x.Id == userId && x.Status == true).FirstAsync();
+            var user = await _unitOfWork.Users.FindByQuery(x => x.Id == userId && x.Status == true).FirstOrDefaultAsync();
             if (user == null)
             {
                 _baseResponse.Message = (lang == "ar") ? "لم يتم العثور علي المستخدم" : "User is Exits";
@@ -492,6 +692,7 @@ namespace Maintainify.Controllers
                 }
 
                 _baseResponse.Code = 200;
+                _baseResponse.Status = true;
                 _baseResponse.Message = (lang == "ar") ? "تم تحديث كلمه السر" : "Update Password successfully";
                 _baseResponse.Data = new
                 {
@@ -514,7 +715,7 @@ namespace Maintainify.Controllers
 
         //-------------------------------------------------------------------------------------------- login Api 
         [HttpPost("login")]
-        public async Task<ActionResult<BaseResponse>> LoginAsync([FromBody] LoginModel model, [FromHeader] string lang = "en")
+        public async Task<ActionResult<BaseResponse>> LoginAsync([FromForm] LoginModel model, [FromHeader] string lang = "en")
         {
             if (!ModelState.IsValid)
             {
@@ -535,7 +736,7 @@ namespace Maintainify.Controllers
                 return BadRequest(_baseResponse);
             }
             _baseResponse.Status = true;
-            _baseResponse.Code = result.ErrorCode;
+            _baseResponse.Code = 200;
             _baseResponse.Message = (lang == "ar") ? "تم تسجيل الدخول" : "Login Successfully";
             _baseResponse.Data = new
             {
@@ -555,11 +756,10 @@ namespace Maintainify.Controllers
         [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
         public async Task<ActionResult<BaseResponse>> LogoutAsync([FromHeader] string lang = "en")
         {
-            //var userId = this.User.Claims.First(i => i.Type == "uid").Value; // will give the user's userId
-            var userName = User.FindFirstValue(ClaimTypes.NameIdentifier); // will give the user's userName
-            if (!string.IsNullOrEmpty(userName))
+            var userId = this.User.Claims.First(i => i.Type == "uid").Value; // will give the user's userId
+            if (!string.IsNullOrEmpty(userId))
             {
-                var result = await _accountService.Logout(userName);
+                var result = await _accountService.Logout(userName: _unitOfWork.Users.FindByQuery(s => s.Id == userId).FirstOrDefaultAsync().Result.UserName);
                 if (result)
                 {
                     _baseResponse.Status = true;
@@ -595,9 +795,9 @@ namespace Maintainify.Controllers
                 _baseResponse.Message = (lang == "ar") ? result.ArMessage : result.Message;
                 _baseResponse.Code = result.ErrorCode;
                 _baseResponse.Data = result;
-                _baseResponse.Status = true;
-                return Ok(_baseResponse);
+                return BadRequest(_baseResponse);
             }
+            _baseResponse.Status = true;
             _baseResponse.Code = 200;
             _baseResponse.Message = (lang == "ar") ? result.ArMessage : result.Message;
             _baseResponse.Data = new
@@ -607,7 +807,44 @@ namespace Maintainify.Controllers
                 result.PhoneNumber,
                 Role = result.Roles,
                 result.bankAccountNumber,
+                result.Profession,
                 result.Token,
+                result.UserImgUrl,
+                result.Status,
+            };
+            return Ok(_baseResponse);
+        }
+
+        //---------------------------------------------------------------------------------------------------- Delete Account
+        [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
+        [HttpDelete("DeleteUser")]
+        public async Task<ActionResult<BaseResponse>> DeleteUser([FromHeader] string lang = "en")
+        {
+            var userId = this.User.Claims.First(i => i.Type == "uid").Value; // will give the user's userId
+            if (string.IsNullOrEmpty(userId))
+            {
+                _baseResponse.Code = 400;
+                _baseResponse.Status = false;
+                _baseResponse.Message = (lang == "ar") ? "المستخدم غير موجود" : "User not exist";
+                _baseResponse.Data = null;
+                return Ok(_baseResponse);
+            }
+            var result = await _accountService.DeleteAccount(userId);
+
+            if (!result.IsAuthenticated)
+            {
+                _baseResponse.Message = (lang == "ar") ? result.ArMessage : result.Message;
+                _baseResponse.Code = result.ErrorCode;
+                _baseResponse.Data = result;
+                return StatusCode(result.ErrorCode,_baseResponse);
+            }
+            _baseResponse.Status = true;
+            _baseResponse.Code = 200;
+            _baseResponse.Message = (lang == "ar") ? result.ArMessage : result.Message;
+            _baseResponse.Data = new
+            {
+                result.FullName,
+                result.PhoneNumber,
                 result.UserImgUrl,
                 result.Status,
             };

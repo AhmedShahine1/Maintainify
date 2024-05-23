@@ -102,6 +102,13 @@ namespace Maintainify.BusinessLayer.Services
             return images;
         }
 
+        public async Task<IEnumerable<Images>> GetFile(string folder, string userId)
+        {
+            PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == folder).FirstAsync();
+            var images = await _unitOfWork.images.FindByQuery(s => s.PathId == pathFiles.Id && s.UserId == userId).ToListAsync();
+            return images;
+        }
+
         public async Task<bool> DeleteFile(Images images)
         {
             try

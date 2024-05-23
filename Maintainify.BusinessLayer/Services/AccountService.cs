@@ -10,6 +10,7 @@ using Maintainify.Core.ModelView.AuthViewModels;
 using Maintainify.Core.ModelView.AuthViewModels.RegisterData;
 using Maintainify.Core.ModelView.AuthViewModels.UpdateData;
 using Maintainify.RepositoryLayer.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -81,14 +82,20 @@ namespace Maintainify.BusinessLayer.Services
         //------------------------------------------------------------------------------------------------------------------
         public async Task<AuthModel> RegisterProviderAsync(RegisterProvider model)
         {
-            if (await _userManager.FindByNameAsync(model.FullName) is not null)
+            if (await Task.Run(() => _userManager.Users.Any(item => item.FullName == model.FullName && item.Status == true)))
                 return new AuthModel { Message = "this Name is already Exist!", ArMessage = "هذا الاسم مستخدم من قبل", ErrorCode = 409 };
 
-            if (await Task.Run(() => _userManager.Users.Any(item => item.PhoneNumber == model.PhoneNumber)))
+            if (await Task.Run(() => _userManager.Users.Any(item => item.PhoneNumber == model.PhoneNumber && item.Status == true)))
                 return new AuthModel { Message = "this phone number is already Exist!", ArMessage = "هذا الرقم المحمول مستخدم من قبل", ErrorCode = 409 };
-            var profession = await _unitOfWork.Profession.FindByQuery(a => a.Id == model.ProfessionId).FirstAsync();
-            if (profession == null)
+            Profession profession;
+            try
+            {
+                profession = await _unitOfWork.Profession.FindByQuery(a => a.Id == model.ProfessionId).FirstAsync();
+            }
+            catch (Exception ex)
+            {
                 return new AuthModel { Message = "this Profession not found!", ArMessage = "هذه المهنه غير موجوده", ErrorCode = 409 };
+            }
             var user = new ApplicationUser
             {
                 FullName = model.FullName,
@@ -124,7 +131,13 @@ namespace Maintainify.BusinessLayer.Services
                 Description = Provider.Description,
                 Profession = profession,
                 Roles = new List<string> { "Provider" },
-                UserImgUrl = new List<string> { await _fileHandling.PathFile(img) },
+                UserImgUrl = new List<ImageModel> 
+                { 
+                    new ImageModel {
+                        IdImage = img.Id,
+                        PathImage = await _fileHandling.PathFile(img)
+                    }
+                },
                 ArMessage = "تم انشاء الحساب بنجاح",
                 Message = "Account created successfully",
                 ErrorCode = 200,
@@ -134,10 +147,10 @@ namespace Maintainify.BusinessLayer.Services
 
         public async Task<AuthModel> RegisterSeekerAsync(RegisterSeeker model)
         {
-            if (await _userManager.FindByNameAsync(model.FullName) is not null)
+            if (await Task.Run(() => _userManager.Users.Any(item => item.FullName == model.FullName && item.Status == true)))
                 return new AuthModel { Message = "this Name is already Exist!", ArMessage = "هذا الاسم مستخدم من قبل", ErrorCode = 409 };
 
-            if (await Task.Run(() => _userManager.Users.Any(item => item.PhoneNumber == model.PhoneNumber)))
+            if (await Task.Run(() => _userManager.Users.Any(item => item.PhoneNumber == model.PhoneNumber && item.Status == true)))
                 return new AuthModel { Message = "this phone number is already Exist!", ArMessage = "هذا الرقم المحمول مستخدم من قبل", ErrorCode = 409 };
 
             var user = new ApplicationUser
@@ -169,7 +182,13 @@ namespace Maintainify.BusinessLayer.Services
                 FullName = Seeker.FullName,
                 IsAuthenticated = true,
                 Roles = new List<string> { "Seeker" },
-                UserImgUrl = new List<string> { await _fileHandling.PathFile(img) },
+                UserImgUrl = new List<ImageModel>
+                {
+                    new ImageModel {
+                        IdImage = img.Id,
+                        PathImage = await _fileHandling.PathFile(img)
+                    }
+                },
                 ArMessage = "تم انشاء الحساب بنجاح",
                 Message = "Account created successfully",
                 ErrorCode = 200,
@@ -194,10 +213,15 @@ namespace Maintainify.BusinessLayer.Services
 
 
             var rolesList = _userManager.GetRolesAsync(user).Result.ToList();
-            List<string> images = new List<string>();
-            foreach (var img in _unitOfWork.images.FindByQuery(s=>s.UserId==user.Id))
+            List<ImageModel> images = new List<ImageModel>();
+            PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == "Profile").FirstAsync();
+            foreach (var img in _unitOfWork.images.FindByQuery(s => s.UserId == user.Id && s.PathId == pathFiles.Id))
             {
-                images.Add(await _fileHandling.PathFile(img));
+                images.Add(new ImageModel
+                {
+                    IdImage = img.Id,
+                    PathImage = await _fileHandling.PathFile(img)
+                });
             }
             return new AuthModel
             {
@@ -232,27 +256,65 @@ namespace Maintainify.BusinessLayer.Services
             var user = await _userManager.FindByIdAsync(userId);
             if (user is null)
                 return new AuthModel { ErrorCode = 404, Message = "User not found!", ArMessage = "المستخدم غير موجود" };
+            if (!user.Status)
+                return new AuthModel { Message = "Your account has been suspended!", ArMessage = "حسابك تم إيقافة", ErrorCode = 401 };
 
             var rolesList = _userManager.GetRolesAsync(user).Result.ToList();
-            List<string> images = new List<string>();
+            List<ImageModel> images = new List<ImageModel>();
             PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == "Profile").FirstAsync();
             foreach (var img in _unitOfWork.images.FindByQuery(s => s.UserId == user.Id && s.PathId == pathFiles.Id))
             {
-                images.Add(await _fileHandling.PathFile(img));
+                images.Add(new ImageModel
+                {
+                    IdImage = img.Id,
+                    PathImage = await _fileHandling.PathFile(img)
+                });
             }
             return new AuthModel
             {
                 Status = true,
                 UserId = user.Id,
                 PhoneNumber = user.PhoneNumber,
+                
                 FullName = user.FullName,
                 IsAuthenticated = true,
                 Roles = rolesList,
-                Profession = user.profession,
+                Profession = await _unitOfWork.Profession.FindByQuery(s=>s.Id==user.professionId).FirstOrDefaultAsync(),
                 Token = new JwtSecurityTokenHandler().WriteToken(GenerateJwtToken(user).Result),
                 UserImgUrl = images,
                 Description = user.Description,
                 bankAccountNumber = user.bankAccountNumber,
+                ErrorCode = 200,
+                Message = "information successfully",
+                ArMessage = "تم حصول علي بيانات بنجاح"
+            };
+        }
+
+        public async Task<AuthModel> GetPreviousWork(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user is null)
+                return new AuthModel { ErrorCode = 404, Message = "User not found!", ArMessage = "المستخدم غير موجود" };
+            if (!user.Status)
+                return new AuthModel { Message = "Your account has been suspended!", ArMessage = "حسابك تم إيقافة", ErrorCode = 401 };
+
+            List<ImageModel> images = new List<ImageModel>();
+            PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == "PreviousWork").FirstAsync();
+            foreach (var img in _unitOfWork.images.FindByQuery(s => s.UserId == user.Id && s.PathId == pathFiles.Id))
+            {
+                images.Add(new ImageModel
+                {
+                    IdImage = img.Id,
+                    PathImage = await _fileHandling.PathFile(img)
+                });
+            }
+            return new AuthModel
+            {
+                UserId = user.Id,
+                PhoneNumber = user.PhoneNumber,
+                FullName = user.FullName,
+                IsAuthenticated = true,
+                PreviousWork = images,
                 ErrorCode = 200,
                 Message = "information successfully",
                 ArMessage = "تم حصول علي بيانات بنجاح"
@@ -300,7 +362,34 @@ namespace Maintainify.BusinessLayer.Services
                 var profession = await _unitOfWork.Profession.FindByQuery(a => a.Id == updateUser.ProfessionId).FirstAsync();
                 if (profession == null)
                     return new AuthModel { Message = "this Profession not found!", ArMessage = "هذه المهنه غير موجوده", ErrorCode = 409 };
+                var NameUser = await _unitOfWork.Users.FindByQuery(s => s.Id != userId && s.FullName == updateUser.FullName && s.Status == true).FirstAsync();
+                if (NameUser != null)
+                {
+                    return new AuthModel
+                    {
+                        IsAuthenticated = false,
+                        ArMessage = "هذا الاسم مستخدم من قبل",
+                        Message = "Change Full Name",
+                        ErrorCode = 400,
+                    };
+
+                }
+                var PhoneUser = await _unitOfWork.Users.FindByQuery(s => s.Id != userId && s.PhoneNumber == updateUser.PhoneNumber && s.Status == true).FirstAsync();
+                if (PhoneUser != null)
+                {
+                    return new AuthModel
+                    {
+                        IsAuthenticated = false,
+                        ArMessage = "هذا الرقم مستخدم من قبل",
+                        Message = "Change Phone Number",
+                        ErrorCode = 400,
+                    };
+
+                }
                 var result = await _unitOfWork.Users.FindByQuery(s => s.Id == userId).FirstAsync();
+                if (!result.Status)
+                    return new AuthModel { Message = "Your account has been suspended!", ArMessage = "حسابك تم إيقافة", ErrorCode = 401 };
+
                 result.PhoneNumber = updateUser.PhoneNumber;
                 result.Email = updateUser.Email;
                 result.FullName = updateUser.FullName;
@@ -317,6 +406,7 @@ namespace Maintainify.BusinessLayer.Services
                     bankAccountNumber = result.bankAccountNumber,
                     Profession = result.profession,
                     FullName = result.FullName,
+                    Description = result.Description,
                     IsAuthenticated = true,
                     Roles = new List<string> {"Provider" },
                     ArMessage = "تم تحديث الحساب بنجاح",
@@ -339,9 +429,36 @@ namespace Maintainify.BusinessLayer.Services
 
         public async Task<AuthModel> UpdateUserProfileSeeker(string userId, UpdateProfileSeeker updateUser)
         {
+            var result = await _unitOfWork.Users.FindByQuery(s => s.Id == userId).FirstAsync();
+            var NameUser = await _unitOfWork.Users.FindByQuery(s => s.Id != userId && s.FullName == updateUser.FullName && s.Status == true).FirstOrDefaultAsync();
+            if (NameUser != null)
+            {
+                return new AuthModel
+                {
+                    IsAuthenticated = false,
+                    ArMessage = "هذا الاسم مستخدم من قبل",
+                    Message = "Change Full Name",
+                    ErrorCode = 400,
+                };
+
+            }
+            var PhoneUser = await _unitOfWork.Users.FindByQuery(s => s.Id != userId && s.PhoneNumber == updateUser.PhoneNumber && s.Status == true).FirstOrDefaultAsync();
+            if (PhoneUser != null)
+            {
+                return new AuthModel
+                {
+                    IsAuthenticated = false,
+                    ArMessage = "هذا الرقم مستخدم من قبل",
+                    Message = "Change Phone Number",
+                    ErrorCode = 400,
+                };
+
+            }
+            if (!result.Status)
+                return new AuthModel { Message = "Your account has been suspended!", ArMessage = "حسابك تم إيقافة", ErrorCode = 401 };
+
             try
             {
-                var result = await _unitOfWork.Users.FindByQuery(s => s.Id == userId).FirstAsync();
                 result.PhoneNumber = updateUser.PhoneNumber;
                 result.Email = updateUser.Email;
                 result.FullName = updateUser.FullName;
@@ -410,6 +527,45 @@ namespace Maintainify.BusinessLayer.Services
                 Message = "Account Update successfully",
                 ErrorCode = 200,
             };
+
+        }
+
+        //----------------------------------------------------------------------------------------------------------------
+        public async Task<AuthModel> DeleteAccount(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user is null)
+                return new AuthModel { Message = "Your Name is not Exist!", ArMessage = "المستخدم غير مسجل", ErrorCode = 401 };
+            if (!user.Status)
+                return new AuthModel { Message = "Your account has been suspended!", ArMessage = "حسابك تم إيقافة", ErrorCode = 401 };
+            try
+            {
+                user.Status = false;
+                _unitOfWork.Users.Update(user);
+                await _unitOfWork.SaveChangesAsync();
+                return new AuthModel
+                {
+                    UserId = userId,
+                    PhoneNumber = user.PhoneNumber,
+                    FullName = user.FullName,
+                    IsAuthenticated = true,
+                    ArMessage = "تم خذف الحساب بنجاح",
+                    Message = "Account Deleted successfully",
+                    ErrorCode = 200,
+                };
+
+            }
+            catch (Exception ex)
+            {
+                return new AuthModel
+                {
+                    IsAuthenticated = false,
+                    ArMessage = "فشل في حذف البيانات",
+                    Message = "Account Delete Failed",
+                    ErrorCode = 500,
+                };
+
+            }
 
         }
 

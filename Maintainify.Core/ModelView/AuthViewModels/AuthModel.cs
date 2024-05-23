@@ -18,7 +18,8 @@ namespace Maintainify.Core.ModelView.AuthViewModels
         public string PhoneNumber { get; set; }
         public float? Lat { get; set; }
         public float? Lng { get; set; }
-        public List<string> UserImgUrl { get; set; }
+        public IList<ImageModel> UserImgUrl { get; set; }
+        public IList<ImageModel> PreviousWork { get; set; }
         public string Description { get; set; }
         public string bankAccountNumber { get; set; }
     }

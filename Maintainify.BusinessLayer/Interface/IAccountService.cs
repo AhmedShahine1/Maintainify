@@ -28,6 +28,7 @@ namespace Maintainify.BusinessLayer.Interface
         Task<AuthModel> UpdateUserProfileProvider(string userId, UpdateProfileProvider updateUser);
         Task<AuthModel> UpdateUserProfileSeeker(string userId, UpdateProfileSeeker updateUser);
         Task<AuthModel> GetUserInfo(string userId);
+        Task<AuthModel> GetPreviousWork(string userId);
         Task<string> AddRoleAsync(AddRoleModel model);
         IList<string> RoleUser(ApplicationUser userc);
         Task<List<string>> GetRoles();
@@ -40,6 +41,6 @@ namespace Maintainify.BusinessLayer.Interface
         ////Task HideServices(string userId);
         //string RandomString(int length);
         //Task<string> StopAsync();
-        //Task Delete(string userId);
+        Task<AuthModel> DeleteAccount(string userId);
     }
 }

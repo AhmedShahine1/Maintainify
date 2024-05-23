@@ -25,15 +25,16 @@ namespace Maintainify.Core.ModelView.AuthViewModels.UpdateData
 
         [StringLength(128)]
         [Display(Name = "المهنه")]
+        [Required]
         public string ProfessionId { get; set; }
 
         [StringLength(int.MaxValue), MinLength(1)]
+        [Required]
         public string Description { get; set; }
 
         [StringLength(int.MaxValue), MinLength(1)]
+        [Required]
         public string bankAccountNumber { get; set; }
-
-        public List<IFormFile> PreviousWork { get; set; }
 
     }
 }
