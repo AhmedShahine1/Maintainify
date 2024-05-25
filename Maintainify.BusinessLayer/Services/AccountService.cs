@@ -214,7 +214,7 @@ namespace Maintainify.BusinessLayer.Services
 
             var rolesList = _userManager.GetRolesAsync(user).Result.ToList();
             List<ImageModel> images = new List<ImageModel>();
-            PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == "Profile").FirstAsync();
+            PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == "Profile".ToLower()).FirstAsync();
             foreach (var img in _unitOfWork.images.FindByQuery(s => s.UserId == user.Id && s.PathId == pathFiles.Id))
             {
                 images.Add(new ImageModel
@@ -233,6 +233,7 @@ namespace Maintainify.BusinessLayer.Services
                 Roles = rolesList,
                 Token = new JwtSecurityTokenHandler().WriteToken(GenerateJwtToken(user).Result),
                 UserImgUrl = images,
+                Profession = (user.professionId != null) ? await _unitOfWork.Profession.FindByQuery(s => s.Id == user.professionId).FirstOrDefaultAsync():null,
                 Description = user.Description,
                 bankAccountNumber = user.bankAccountNumber,
                 ErrorCode = 200,
@@ -261,7 +262,7 @@ namespace Maintainify.BusinessLayer.Services
 
             var rolesList = _userManager.GetRolesAsync(user).Result.ToList();
             List<ImageModel> images = new List<ImageModel>();
-            PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == "Profile").FirstAsync();
+            PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == "Profile".ToLower()).FirstAsync();
             foreach (var img in _unitOfWork.images.FindByQuery(s => s.UserId == user.Id && s.PathId == pathFiles.Id))
             {
                 images.Add(new ImageModel
@@ -299,7 +300,7 @@ namespace Maintainify.BusinessLayer.Services
                 return new AuthModel { Message = "Your account has been suspended!", ArMessage = "حسابك تم إيقافة", ErrorCode = 401 };
 
             List<ImageModel> images = new List<ImageModel>();
-            PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == "PreviousWork").FirstAsync();
+            PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == "PreviousWork".ToLower()).FirstAsync();
             foreach (var img in _unitOfWork.images.FindByQuery(s => s.UserId == user.Id && s.PathId == pathFiles.Id))
             {
                 images.Add(new ImageModel
@@ -354,6 +355,12 @@ namespace Maintainify.BusinessLayer.Services
             var role = _userManager.GetRolesAsync(user).Result.ToList();
             return role;
         }
+
+        public IList<ApplicationUser> GetUsersRoles(string role)
+        {
+            return _userManager.GetUsersInRoleAsync(role).Result.ToList();
+        }
+
         //------------------------------------------------------------------------------------------------------------
         public async Task<AuthModel> UpdateUserProfileProvider(string userId, UpdateProfileProvider updateUser)
         {

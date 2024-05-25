@@ -4,8 +4,6 @@ using Microsoft.AspNetCore.Hosting;
 using Maintainify.Core.Entity.ApplicationData;
 using Maintainify.RepositoryLayer.Interfaces;
 using Microsoft.EntityFrameworkCore;
-using static System.Net.Mime.MediaTypeNames;
-using System.Diagnostics.Eventing.Reader;
 
 namespace Maintainify.BusinessLayer.Services
 {
@@ -22,7 +20,7 @@ namespace Maintainify.BusinessLayer.Services
 
         #region Photo Handling
 
-        public async Task<bool> PathFiles(PathFiles pathFiles)
+        public async Task<bool> AddPathFiles(PathFiles pathFiles)
         {
             try
             {
@@ -31,6 +29,7 @@ namespace Maintainify.BusinessLayer.Services
                     return false;
                 }
                 pathFiles.Id = Guid.NewGuid().ToString();
+                pathFiles.type = pathFiles.type.ToLower();
                 await _unitOfWork.pathFiles.AddAsync(pathFiles);
                 await _unitOfWork.SaveChangesAsync();
                 return true;
@@ -76,7 +75,7 @@ namespace Maintainify.BusinessLayer.Services
 
         public async Task<Images> UploadFile(IFormFile file, string folder , string userId)
         {
-            PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == folder).FirstAsync();
+            PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == folder.ToLower()).FirstAsync();
             var uploads = Path.Combine(_webHostEnvironment.WebRootPath, pathFiles.Name);
             var uniqueFileName = RandomString(10) + "_" + file.FileName;
             var filePath = Path.Combine(uploads, uniqueFileName);
@@ -104,7 +103,7 @@ namespace Maintainify.BusinessLayer.Services
 
         public async Task<IEnumerable<Images>> GetFile(string folder, string userId)
         {
-            PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == folder).FirstAsync();
+            PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == folder.ToLower()).FirstAsync();
             var images = await _unitOfWork.images.FindByQuery(s => s.PathId == pathFiles.Id && s.UserId == userId).ToListAsync();
             return images;
         }

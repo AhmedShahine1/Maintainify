@@ -61,7 +61,7 @@ namespace Maintainify.Controllers
 
             var role = await _roleManager.CreateAsync(new ApplicationRole()
             {
-                Name = roleDto.RoleName,
+                Name = roleDto.RoleName.ToLower(),
                 NameAr = roleDto.RoleNameAr,
                 Description = roleDto.Description,
             });
@@ -103,7 +103,7 @@ namespace Maintainify.Controllers
                 _baseResponse.Data = new { message = string.Join("; ", ModelState.Values.SelectMany(x => x.Errors).Select(x => x.ErrorMessage)) };
                 return Conflict(_baseResponse);
             }
-            bool result=await _fileHandling.PathFiles(pathFiles);
+            bool result=await _fileHandling.AddPathFiles(pathFiles);
             if(!result)
             {
                 _baseResponse.Status = false;
@@ -270,7 +270,7 @@ namespace Maintainify.Controllers
             }
             try
             {
-                PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == "Profile").FirstOrDefaultAsync();
+                PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == "profile").FirstOrDefaultAsync();
                 Images image = await _unitOfWork.images.FindByQuery(s => s.UserId == userId && s.PathId == pathFiles.Id).FirstOrDefaultAsync();
                 if (!await _fileHandling.DeleteFile(image))
                 {
@@ -338,7 +338,7 @@ namespace Maintainify.Controllers
                 return Unauthorized(_baseResponse);
             }
 
-            PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == "PreviousWork").FirstOrDefaultAsync();
+            PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == "PreviousWork".ToLower()).FirstOrDefaultAsync();
             IEnumerable<Images> image = _unitOfWork.images.FindByQuery(s => s.UserId == userId && s.PathId == pathFiles.Id).AsQueryable();
             if(image.Count()!=0)
             {
@@ -743,6 +743,7 @@ namespace Maintainify.Controllers
                 result.UserId,
                 result.FullName,
                 result.Token,
+                result.Profession,
                 Role = result.Roles,
                 result.UserImgUrl,
                 result.PhoneNumber,

@@ -1,4 +1,5 @@
-﻿using Maintainify.Core.Entity.ProfessionData;
+﻿using Maintainify.Core.Entity.OrderData;
+using Maintainify.Core.Entity.ProfessionData;
 
 namespace Maintainify.Core.ModelView.AuthViewModels
 {

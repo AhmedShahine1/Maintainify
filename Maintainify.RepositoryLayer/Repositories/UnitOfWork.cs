@@ -1,5 +1,6 @@
 ﻿using Maintainify.Core;
 using Maintainify.Core.Entity.ApplicationData;
+using Maintainify.Core.Entity.OrderData;
 using Maintainify.Core.Entity.ProfessionData;
 using Maintainify.RepositoryLayer.Interfaces;
 
@@ -14,7 +15,7 @@ namespace Maintainify.RepositoryLayer.Repositories
         public IBaseRepository<PathFiles> pathFiles { get; private set; }
         public IBaseRepository<Images> images { get; private set; }
         public IBaseRepository<Profession> Profession { get; private set; }
-
+        public IBaseRepository<Order> Orders { get; private set; }
 
         public UnitOfWork(ApplicationDbContext context)
         {
@@ -24,6 +25,7 @@ namespace Maintainify.RepositoryLayer.Repositories
             pathFiles = new BaseRepository<PathFiles>(_context);
             images = new BaseRepository<Images>(_context);
             Profession = new BaseRepository<Profession>(_context);
+            Orders = new BaseRepository<Order>(_context);
         }
 
         public int SaveChanges()

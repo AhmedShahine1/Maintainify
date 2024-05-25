@@ -32,6 +32,7 @@ namespace Maintainify.BusinessLayer.Interface
         Task<string> AddRoleAsync(AddRoleModel model);
         IList<string> RoleUser(ApplicationUser userc);
         Task<List<string>> GetRoles();
+        IList<ApplicationUser> GetUsersRoles(string role);
         string ValidateJwtToken(string token);
         int GenerateRandomNo();
         ////------------------------------------------------------

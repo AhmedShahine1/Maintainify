@@ -11,7 +11,7 @@ namespace Maintainify.BusinessLayer.Interface
 {
     public interface IFileHandling
     {
-        public Task<bool> PathFiles(PathFiles pathFiles);
+        public Task<bool> AddPathFiles(PathFiles pathFiles);
 
         public Task<Images> ProfileImage(string userId, string PathType);
 

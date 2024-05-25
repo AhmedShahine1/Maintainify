@@ -10,7 +10,8 @@ namespace Maintainify.Core.Entity
 {
     public class BaseEntity
     {
-        public string Id { get; set; }
+        public string Id { get; set; } = Guid.NewGuid().ToString();
+
         [Display(Name = "تاريخ الإنشاء")]
         [JsonIgnore]
         public DateTime CreatedAt { get; set; } = DateTime.Now;

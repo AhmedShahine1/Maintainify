@@ -1,4 +1,5 @@
-﻿using Maintainify.BusinessLayer.Interface;
+﻿using Maintainify.BusinessLayer.AutoMapper;
+using Maintainify.BusinessLayer.Interface;
 using Maintainify.BusinessLayer.Services;
 using Maintainify.Middleware;
 
@@ -22,6 +23,7 @@ namespace Maintainify.Extensions
             // Application Service 
             services.AddScoped<IAccountService, AccountService>();
             services.AddTransient<IFileHandling, FileHandling>();
+            services.AddAutoMapper(cfg => cfg.AddProfile<MappingProfile>());
             //services.AddTransient<INotificationService, NotificationService>();
             //services.AddTransient<IPaymentService, PaymentService>();
             //services.Configure<FcmNotificationSetting>(config.GetSection("FcmNotification"));

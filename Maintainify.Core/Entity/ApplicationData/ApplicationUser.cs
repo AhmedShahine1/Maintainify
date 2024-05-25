@@ -19,12 +19,12 @@ namespace Maintainify.Core.Entity.ApplicationData
         public float? Lng { get; set; }
         public string RandomCode { get; set; }
         public bool PhoneNumberConfirmed {  get; set; }
-        public string professionId { get; set; }
+        public string? professionId { get; set; }
         //------------------------------------------------------------------------------------------------
         public Profession? profession { get; set; }
-        public IEnumerable<Images> images { get; set; } = new List<Images> ();
-        //public IEnumerable<Order> orders { get; set; } = new List<Order>();
-
+        public ICollection<Images> images { get; set; }
+        public virtual ICollection<Order> OrdersAsProvider { get; set; }
+        public virtual ICollection<Order> OrdersAsSeeker { get; set; }
         //------------------------------------------------------------------------------------------------
         [NotMapped]
         public List<IFormFile> UserImgFile { get; set; }
