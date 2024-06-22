@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Maintainify.Core.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240525071308_CreateOrder")]
-    partial class CreateOrder
+    [Migration("20240530121016_intialCreateTable")]
+    partial class intialCreateTable
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -236,6 +236,10 @@ namespace Maintainify.Core.Migrations
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("numberOrder")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 

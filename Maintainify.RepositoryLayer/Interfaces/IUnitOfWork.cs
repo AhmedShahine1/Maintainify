@@ -19,6 +19,9 @@ namespace Maintainify.RepositoryLayer.Interfaces
         IBaseRepository<Images> images { get; }
         IBaseRepository<Profession> Profession {  get; }
         IBaseRepository<Order> Orders { get; }
+        //IBaseRepository<EvaluationProvider> evaluationProvider { get; }
+        //IBaseRepository<EvaluationOrder> evaluationOrder { get; }
+
         //-----------------------------------------------------------------------------------
         int SaveChanges();
 

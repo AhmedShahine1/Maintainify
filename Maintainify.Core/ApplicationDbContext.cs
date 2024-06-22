@@ -20,6 +20,8 @@ namespace Maintainify.Core
         public virtual DbSet<PathFiles> PathFiles { get; set; }
         public virtual DbSet<Images> Images { get; set; }
         public virtual DbSet<Order> Orders { get; set; }
+        //public virtual DbSet<EvaluationOrder> EvaluationOrders { get; set; }
+        //public virtual DbSet<EvaluationProvider> EvaluationProviders { get; set; }
         //-----------------------------------------------------------------------------------
 
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
@@ -34,7 +36,7 @@ namespace Maintainify.Core
             if (!optionsBuilder.IsConfigured)
             {
                 optionsBuilder.UseSqlServer(
-                    "Server=LAPTOP-K8QC50ME;Database=Maintainify;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True;");
+                    "Server=p3nwplsk12sql-v04.shr.prod.phx3.secureserver.net;Database=Maintainify;User Id=Maintainify;Password=Ahmed@123;TrustServerCertificate=True;");
             }
         }
 
@@ -60,6 +62,18 @@ namespace Maintainify.Core
                 .WithMany(u => u.OrdersAsSeeker)
                 .HasForeignKey(o => o.SeekerId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            //modelBuilder.Entity<EvaluationProvider>()
+            //.HasOne(m => m.Seeker)
+            //.WithMany(u => u.EvaluationSeekers)
+            //.HasForeignKey(m => m.SeekerId)
+            //.OnDelete(DeleteBehavior.Restrict);
+
+            //modelBuilder.Entity<EvaluationProvider>()
+            //    .HasOne(m => m.Provider)
+            //    .WithMany(m => m.EvaluationProviders)
+            //    .HasForeignKey(m => m.ProviderId)
+            //    .OnDelete(DeleteBehavior.Restrict);
         }
 
     }

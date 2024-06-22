@@ -1,32 +1,23 @@
 ﻿using AutoMapper;
 using Maintainify.BusinessLayer.Interface;
-using Maintainify.BusinessLayer.Services;
 using Maintainify.Core.DTO;
 using Maintainify.Core.Entity.ApplicationData;
 using Maintainify.Core.Entity.OrderData;
-using Maintainify.Core.Entity.ProfessionData;
 using Maintainify.Core.Helpers;
-using Maintainify.Core.ModelView.AuthViewModels;
 using Maintainify.Core.ModelView.OrderViewModels;
 using Maintainify.RepositoryLayer.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.Net.Http.Headers;
-using System.ComponentModel.DataAnnotations;
-using System.Data;
-using System.Text.RegularExpressions;
 
 namespace Maintainify.Controllers
 {
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-    public class OrderSeekerController : BaseController, IActionFilter
+    public class OrderProviderController : BaseController, IActionFilter
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IFileHandling _fileHandling;
@@ -36,7 +27,7 @@ namespace Maintainify.Controllers
         private IList<string> roleUser;
         private readonly IAccountService _accountService;
 
-        public OrderSeekerController(IUnitOfWork unitOfWork, IFileHandling fileHandling, IAccountService accountService, IMapper mapper)
+        public OrderProviderController(IUnitOfWork unitOfWork, IFileHandling fileHandling, IAccountService accountService, IMapper mapper)
         {
             _unitOfWork = unitOfWork;
             _fileHandling = fileHandling;
@@ -81,120 +72,6 @@ namespace Maintainify.Controllers
         {
         }
         //---------------------------------------------------------------------------------------------------
-        [HttpGet("AllProvider")]
-        public async Task<ActionResult<BaseResponse>> GetProvider([FromHeader] string lang = "en")
-        {
-            if (!roleUser.Contains("Seeker"))
-            {
-                _baseResponse.Message = (lang == "ar") ? "المستخدم لا يملك صلاحيه" : "User is not Seeker";
-                _baseResponse.Code = 401;
-                _baseResponse.Status = false;
-                _baseResponse.Data = new { };
-                return Unauthorized(_baseResponse);
-            }
-            try
-            {
-                var Providers = _accountService.GetUsersRoles("Provider");
-                List<dynamic> result = new List<dynamic> { };
-                foreach (var provider in Providers)
-                {
-                    List<ImageModel> images = new List<ImageModel>();
-                    PathFiles pathFiles = await _unitOfWork.pathFiles.FindByQuery(x => x.type == "PreviousWork".ToLower()).FirstAsync();
-                    foreach (var img in _unitOfWork.images.FindByQuery(s => s.UserId == provider.Id && s.PathId == pathFiles.Id))
-                    {
-                        images.Add(new ImageModel
-                        {
-                            IdImage = img.Id,
-                            PathImage = await _fileHandling.PathFile(img)
-                        });
-                    }
-
-                    var user = await _accountService.GetUserInfo(provider.Id);
-                    result.Add(new
-                    {
-                        UserId = user.UserId,
-                        Description = user.Description,
-                        FullName = user.FullName,
-                        UserImgUrl = user.UserImgUrl,
-                        PhoneNumber = user.PhoneNumber,
-                        Profession = user.Profession,
-                        PreviousWork = images,
-                    });
-                }
-                _baseResponse.Message = (lang == "ar") ? "مقدمي الخدمات" : "All Providers";
-                _baseResponse.Status = true;
-                _baseResponse.Code = 200;
-                _baseResponse.Data = result;
-                return StatusCode(_baseResponse.Code, _baseResponse);
-            }
-            catch (Exception ex)
-            {
-                _baseResponse.Message = ex.Message;
-                _baseResponse.Code = 500;
-                _baseResponse.Status = false;
-                _baseResponse.Data = new { message = string.Join("; ", ModelState.Values.SelectMany(x => x.Errors).Select(x => x.ErrorMessage)) };
-                return StatusCode(500, _baseResponse);
-            }
-
-        }
-
-        //---------------------------------------------------------------------------------------------------
-
-        [HttpPost("AddOrder")]
-        public async Task<ActionResult<BaseResponse>> AddOrder([FromForm] OrderModel orderModel, [FromHeader] string lang = "en")
-        {
-            if (!ModelState.IsValid)
-            {
-                _baseResponse.Status = false;
-                _baseResponse.Message = (lang == "ar") ? "خطأ في البيانات" : "Error in data";
-                _baseResponse.Code = 400;
-                _baseResponse.Data = new { message = string.Join("; ", ModelState.Values.SelectMany(x => x.Errors).Select(x => x.ErrorMessage)) };
-                return BadRequest(_baseResponse);
-            }
-            if (!roleUser.Contains("seeker"))
-            {
-                _baseResponse.Message = (lang == "ar") ? "المستخدم لا يملك صلاحيه" : "User is not Seeker";
-                _baseResponse.Code = 401;
-                _baseResponse.Status = false;
-                _baseResponse.Data = new { orderModel };
-                return Unauthorized(_baseResponse);
-            }
-            try
-            {
-                orderModel.SeekerId = _user.Id;
-                var order = _mapper.Map<Order>(orderModel);
-                order.numberOrder = order.Id;
-                await _unitOfWork.Orders.AddAsync(order);
-                await _unitOfWork.SaveChangesAsync();
-                _baseResponse.Message = (lang == "ar") ? "تم طلب الخدمه" : "Create Order succsefully";
-                _baseResponse.Status = true;
-                _baseResponse.Code = 200;
-                _baseResponse.Data = new
-                {
-                    order.Id,
-                    orderModel.Status,
-                    order.OrderDate,
-                    order.CreatedAt,
-                    order.UpdatedAt,
-                    order.DeletedAt,
-                    order.IsDeleted,
-                    order.IsUpdated,
-                    order.ProviderId,
-                };
-                return StatusCode(_baseResponse.Code, _baseResponse);
-
-            }
-            catch (Exception ex)
-            {
-                _baseResponse.Message = "Not Can Save Order";
-                _baseResponse.Code = 500;
-                _baseResponse.Status = false;
-                _baseResponse.Data = new { message = string.Join("; ", ModelState.Values.SelectMany(x => x.Errors).Select(x => x.ErrorMessage)) };
-                return StatusCode(500, _baseResponse);
-            }
-        }
-
-        //---------------------------------------------------------------------------------------------------
 
         [HttpGet("AllOrder")]
         public async Task<ActionResult<BaseResponse>> AllOrder([FromHeader] string lang = "en")
@@ -207,7 +84,7 @@ namespace Maintainify.Controllers
                 _baseResponse.Data = new { message = string.Join("; ", ModelState.Values.SelectMany(x => x.Errors).Select(x => x.ErrorMessage)) };
                 return BadRequest(_baseResponse);
             }
-            if (!roleUser.Contains("seeker"))
+            if (!roleUser.Contains("Provider"))
             {
                 _baseResponse.Message = (lang == "ar") ? "المستخدم لا يملك صلاحيه" : "User is not Seeker";
                 _baseResponse.Code = 401;
@@ -215,7 +92,7 @@ namespace Maintainify.Controllers
                 _baseResponse.Data = new { };
                 return Unauthorized(_baseResponse);
             }
-            var Orders = await _unitOfWork.Orders.FindByQuery(s => s.SeekerId == _user.Id)
+            var Orders = await _unitOfWork.Orders.FindByQuery(s => s.ProviderId == _user.Id && !s.IsDeleted)
                 .ToListAsync();
             ICollection<OrderModel> orderModels = new List<OrderModel>();
             foreach (var o in Orders)
@@ -252,7 +129,7 @@ namespace Maintainify.Controllers
                 _baseResponse.Data = new { message = string.Join("; ", ModelState.Values.SelectMany(x => x.Errors).Select(x => x.ErrorMessage)) };
                 return BadRequest(_baseResponse);
             }
-            if (!roleUser.Contains("Seeker"))
+            if (!roleUser.Contains("Provider"))
             {
                 _baseResponse.Message = (lang == "ar") ? "المستخدم لا يملك صلاحيه" : "User is not Seeker";
                 _baseResponse.Code = 401;
@@ -262,7 +139,7 @@ namespace Maintainify.Controllers
             }
             try
             {
-                var Orders = await _unitOfWork.Orders.FindByQuery(s => s.SeekerId == _user.Id && !s.IsDeleted && s.OrderStatus == OrderStatus.Preparing)
+                var Orders = await _unitOfWork.Orders.FindByQuery(s => s.ProviderId == _user.Id && !s.IsDeleted && s.OrderStatus == OrderStatus.Preparing)
                     .Select(s => new
                     {
                         s.Id,
@@ -306,7 +183,7 @@ namespace Maintainify.Controllers
                 _baseResponse.Data = new { message = string.Join("; ", ModelState.Values.SelectMany(x => x.Errors).Select(x => x.ErrorMessage)) };
                 return BadRequest(_baseResponse);
             }
-            if (!roleUser.Contains("Seeker"))
+            if (!roleUser.Contains("Provider"))
             {
                 _baseResponse.Message = (lang == "ar") ? "المستخدم لا يملك صلاحيه" : "User is not Seeker";
                 _baseResponse.Code = 401;
@@ -316,7 +193,7 @@ namespace Maintainify.Controllers
             }
             try
             {
-                var Orders = await _unitOfWork.Orders.FindByQuery(s => s.SeekerId == _user.Id && !s.IsDeleted && s.OrderStatus == OrderStatus.Confirmed)
+                var Orders = await _unitOfWork.Orders.FindByQuery(s => s.ProviderId == _user.Id && !s.IsDeleted && s.OrderStatus == OrderStatus.Confirmed)
                     .Select(s => new
                     {
                         s.Id,
@@ -360,7 +237,7 @@ namespace Maintainify.Controllers
                 _baseResponse.Data = new { message = string.Join("; ", ModelState.Values.SelectMany(x => x.Errors).Select(x => x.ErrorMessage)) };
                 return BadRequest(_baseResponse);
             }
-            if (!roleUser.Contains("Seeker"))
+            if (!roleUser.Contains("Provider"))
             {
                 _baseResponse.Message = (lang == "ar") ? "المستخدم لا يملك صلاحيه" : "User is not Seeker";
                 _baseResponse.Code = 401;
@@ -370,7 +247,7 @@ namespace Maintainify.Controllers
             }
             try
             {
-                var Orders = await _unitOfWork.Orders.FindByQuery(s => s.SeekerId == _user.Id && !s.IsDeleted && s.OrderStatus == OrderStatus.WithDriver)
+                var Orders = await _unitOfWork.Orders.FindByQuery(s => s.ProviderId == _user.Id && !s.IsDeleted && s.OrderStatus == OrderStatus.WithDriver)
                     .Select(s => new
                     {
                         s.Id,
@@ -415,7 +292,7 @@ namespace Maintainify.Controllers
                 _baseResponse.Data = new { message = string.Join("; ", ModelState.Values.SelectMany(x => x.Errors).Select(x => x.ErrorMessage)) };
                 return BadRequest(_baseResponse);
             }
-            if (!roleUser.Contains("Seeker"))
+            if (!roleUser.Contains("Provider"))
             {
                 _baseResponse.Message = (lang == "ar") ? "المستخدم لا يملك صلاحيه" : "User is not Seeker";
                 _baseResponse.Code = 401;
@@ -425,7 +302,7 @@ namespace Maintainify.Controllers
             }
             try
             {
-                var Orders = await _unitOfWork.Orders.FindByQuery(s => s.SeekerId == _user.Id && !s.IsDeleted && s.OrderStatus == OrderStatus.Finished)
+                var Orders = await _unitOfWork.Orders.FindByQuery(s => s.ProviderId == _user.Id && !s.IsDeleted && s.OrderStatus == OrderStatus.Finished)
                     .Select(s => new
                     {
                         s.Id,
@@ -469,7 +346,7 @@ namespace Maintainify.Controllers
                 _baseResponse.Data = new { message = string.Join("; ", ModelState.Values.SelectMany(x => x.Errors).Select(x => x.ErrorMessage)) };
                 return BadRequest(_baseResponse);
             }
-            if (!roleUser.Contains("Seeker"))
+            if (!roleUser.Contains("Provider"))
             {
                 _baseResponse.Message = (lang == "ar") ? "المستخدم لا يملك صلاحيه" : "User is not Seeker";
                 _baseResponse.Code = 401;
@@ -479,7 +356,7 @@ namespace Maintainify.Controllers
             }
             try
             {
-                var Orders = await _unitOfWork.Orders.FindByQuery(s => s.SeekerId == _user.Id && !s.IsDeleted && s.OrderStatus == OrderStatus.Cancelled)
+                var Orders = await _unitOfWork.Orders.FindByQuery(s => s.ProviderId == _user.Id && !s.IsDeleted && s.OrderStatus == OrderStatus.Cancelled)
                     .Select(s => new
                     {
                         s.Id,
@@ -526,7 +403,7 @@ namespace Maintainify.Controllers
                 _baseResponse.Data = new { message = string.Join("; ", ModelState.Values.SelectMany(x => x.Errors).Select(x => x.ErrorMessage)) };
                 return BadRequest(_baseResponse);
             }
-            if (!roleUser.Contains("Seeker"))
+            if (!roleUser.Contains("Provider"))
             {
                 _baseResponse.Message = (lang == "ar") ? "المستخدم لا يملك صلاحيه" : "User is not Seeker";
                 _baseResponse.Code = 401;
@@ -536,7 +413,7 @@ namespace Maintainify.Controllers
             }
             try
             {
-                Order order = await _unitOfWork.Orders.FindByQuery(s => s.Id == orderId && !s.IsDeleted &&s.OrderStatus != OrderStatus.Finished).FirstAsync();
+                Order order = await _unitOfWork.Orders.FindByQuery(s => s.Id == orderId && !s.IsDeleted && s.OrderStatus != OrderStatus.Finished).FirstAsync();
                 try
                 {
                     order.OrderStatus = OrderStatus.Cancelled;
@@ -556,6 +433,103 @@ namespace Maintainify.Controllers
                 catch (Exception ex)
                 {
                     _baseResponse.Message = "Not Can Cancelled Order";
+                    _baseResponse.Code = 500;
+                    _baseResponse.Status = false;
+                    _baseResponse.Data = new { message = string.Join("; ", ModelState.Values.SelectMany(x => x.Errors).Select(x => x.ErrorMessage)) };
+                    return StatusCode(500, _baseResponse);
+                }
+
+            }
+            catch (Exception ex)
+            {
+                _baseResponse.Message = "Not Found Order";
+                _baseResponse.Code = 400;
+                _baseResponse.Status = false;
+                _baseResponse.Data = new { message = string.Join("; ", ModelState.Values.SelectMany(x => x.Errors).Select(x => x.ErrorMessage)) };
+                return StatusCode(400, _baseResponse);
+            }
+        }
+
+        [HttpPut("ChangeOrderStatus")]
+        public async Task<ActionResult<BaseResponse>> ChangeOrderStatus([FromForm] string orderId, [FromHeader] string lang = "en")
+        {
+            if (!ModelState.IsValid)
+            {
+                _baseResponse.Status = false;
+                _baseResponse.Message = (lang == "ar") ? "خطأ في البيانات" : "Error in data";
+                _baseResponse.Code = 400;
+                _baseResponse.Data = new { message = string.Join("; ", ModelState.Values.SelectMany(x => x.Errors).Select(x => x.ErrorMessage)) };
+                return BadRequest(_baseResponse);
+            }
+            if (!roleUser.Contains("Provider"))
+            {
+                _baseResponse.Message = (lang == "ar") ? "المستخدم لا يملك صلاحيه" : "User is not Seeker";
+                _baseResponse.Code = 401;
+                _baseResponse.Status = false;
+                _baseResponse.Data = new { orderId };
+                return Unauthorized(_baseResponse);
+            }
+            try
+            {
+                Order order = await _unitOfWork.Orders.FindByQuery(s => s.Id == orderId && !s.IsDeleted && s.OrderStatus != OrderStatus.Finished).FirstAsync();
+                try
+                {
+                    switch(order.OrderStatus)
+                    {
+                        case OrderStatus.Preparing:
+                            {
+                                order.OrderStatus = OrderStatus.Confirmed;
+                                _unitOfWork.Orders.Update(order);
+                                await _unitOfWork.SaveChangesAsync();
+                                _baseResponse.Message = (lang == "ar") ? "تم تاكيد الخدمه" : "Confirmed Order succsefully";
+                                _baseResponse.Status = true;
+                                _baseResponse.Code = 200;
+                                var Order = _mapper.Map<OrderModel>(order);
+                                _baseResponse.Data = new
+                                {
+                                    Order
+                                };
+                                break;
+                            }
+                        case OrderStatus.Confirmed:
+                            {
+                                order.OrderStatus = OrderStatus.WithDriver;
+                                _unitOfWork.Orders.Update(order);
+                                await _unitOfWork.SaveChangesAsync();
+                                _baseResponse.Message = (lang == "ar") ? " مقدم الخدمه في الطريق" : "Provider come now";
+                                _baseResponse.Status = true;
+                                _baseResponse.Code = 200;
+                                var Order = _mapper.Map<OrderModel>(order);
+                                _baseResponse.Data = new
+                                {
+                                    Order
+                                };
+                                break;
+                            }
+                        case OrderStatus.WithDriver:
+                            {
+                                order.OrderStatus = OrderStatus.Finished;
+                                _unitOfWork.Orders.Update(order);
+                                await _unitOfWork.SaveChangesAsync();
+                                _baseResponse.Message = (lang == "ar") ? "تم انتهاء الخدمه" : "Finished Order succsefully";
+                                _baseResponse.Status = true;
+                                _baseResponse.Code = 200;
+                                var Order = _mapper.Map<OrderModel>(order);
+                                _baseResponse.Data = new
+                                {
+                                    Order
+                                };
+
+                                break;
+                            }
+
+                    }
+                    return StatusCode(_baseResponse.Code, _baseResponse);
+
+                }
+                catch (Exception ex)
+                {
+                    _baseResponse.Message = "Not Can Change Status Order";
                     _baseResponse.Code = 500;
                     _baseResponse.Status = false;
                     _baseResponse.Data = new { message = string.Join("; ", ModelState.Values.SelectMany(x => x.Errors).Select(x => x.ErrorMessage)) };

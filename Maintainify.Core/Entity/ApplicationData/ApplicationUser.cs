@@ -1,4 +1,5 @@
-﻿using Maintainify.Core.Entity.OrderData;
+﻿
+using Maintainify.Core.Entity.OrderData;
 using Maintainify.Core.Entity.ProfessionData;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -22,9 +23,12 @@ namespace Maintainify.Core.Entity.ApplicationData
         public string? professionId { get; set; }
         //------------------------------------------------------------------------------------------------
         public Profession? profession { get; set; }
-        public ICollection<Images> images { get; set; }
+        public virtual ICollection<Images> images { get; set; }
         public virtual ICollection<Order> OrdersAsProvider { get; set; }
         public virtual ICollection<Order> OrdersAsSeeker { get; set; }
+        //public virtual ICollection<EvaluationProvider> EvaluationProviders { get; set; }
+        //public virtual ICollection<EvaluationProvider> EvaluationSeekers { get; set; }
+        //public virtual ICollection<EvaluationOrder> EvaluationOrders { get; set; }
         //------------------------------------------------------------------------------------------------
         [NotMapped]
         public List<IFormFile> UserImgFile { get; set; }
